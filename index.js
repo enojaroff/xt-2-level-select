@@ -103,6 +103,8 @@ const xt_2_level_select = {
 
   // Called by Field.fill_fkey_options instead of the core logic, which only
   // handles the built-in "two_level_select" fieldview name.
+  // Same query as the core two_level_select (no "where", same permissions),
+  // plus the parents that have no child.
   // Result: field.options = [{ id, label, options: [{ value, label }] }]
   fill_options: async (field, force_allow_none, where, extraCtx, optionsQuery, formFieldNames, user) => {
     const relation = field.attributes?.relation;
@@ -115,38 +117,40 @@ const xt_2_level_select = {
     if (!relField || !relField.is_fkey) return;
 
     const topTable = Table.findOne(relField.reftable_name);
-    if (!topTable) return;
-    const topPk = relField.refname || topTable.pk_name;
-
+    const topPk = relField.refname || topTable?.pk_name || "id";
     const summary = field.attributes.summary_field || refTable.pk_name;
     const relSummary = relField.attributes?.summary_field || topPk;
-    const userOpts = { forUser: user, forPublic: !user || user.role_id === 100 };
+    const userOpts = { forUser: user, forPublic: user?.role_id === 100 };
 
-    // Level 1 comes from the parent table itself, so parents without any
-    // (visible) child are still listed
     const groups = new Map();
-    const topRows = await topTable.getRows({}, userOpts);
-    for (const top of topRows) {
-      const gid = top[topPk];
-      if (gid === null || gid === undefined) continue;
-      groups.set(String(gid), {
-        id: gid,
-        label: `${top[relSummary] ?? gid}`,
-        options: [],
-      });
-    }
+    const groupFor = (gid, label) => {
+      const key = String(gid);
+      if (!groups.has(key)) groups.set(key, { id: gid, label: `${label ?? gid}`, options: [] });
+      return groups.get(key);
+    };
 
-    const rows = await refTable.getRows(
-      where && typeof where === "object" ? where : {},
-      userOpts
-    );
+    const rows = await refTable.getJoinedRows({
+      ...userOpts,
+      joinFields: {
+        _xt2ls_first_level: { ref: relation, target: relSummary },
+      },
+    });
     for (const row of rows) {
       const gid = row[relation];
-      if (gid === null || gid === undefined || !groups.has(String(gid))) continue;
-      groups.get(String(gid)).options.push({
+      if (gid === null || gid === undefined) continue;
+      groupFor(gid, row._xt2ls_first_level).options.push({
         value: row[field.refname || refTable.pk_name],
         label: `${row[summary] ?? ""}`,
       });
+    }
+
+    // Parents without any child are listed too
+    if (topTable) {
+      const topRows = await topTable.getRows({}, userOpts);
+      for (const top of topRows) {
+        const gid = top[topPk];
+        if (gid !== null && gid !== undefined) groupFor(gid, top[relSummary]);
+      }
     }
     const byLabel = (a, b) => a.label.localeCompare(b.label, undefined, { numeric: true });
     field.options = [...groups.values()].sort(byLabel);

@@ -1,6 +1,6 @@
 {
   "name": "@enojaroff/xt-2-level-select",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Enhanced two-level select fieldview for Saltcorn: searchable selects, horizontal/vertical layout, spacing, placeholders and level 1 width",
   "main": "index.js",
   "keywords": [
