@@ -114,28 +114,36 @@ const xt_2_level_select = {
     const relField = refTable.getFields().find((f) => f.name === relation);
     if (!relField || !relField.is_fkey) return;
 
-    const summary = field.attributes.summary_field || refTable.pk_name;
-    const relSummary = relField.attributes?.summary_field || relField.refname || "id";
-    const rows = await refTable.getJoinedRows({
-      where: where && typeof where === "object" ? where : {},
-      forUser: user,
-      forPublic: !user || user.role_id === 100,
-      joinFields: {
-        _xt2ls_first_level: { ref: relation, target: relSummary },
-      },
-    });
+    const topTable = Table.findOne(relField.reftable_name);
+    if (!topTable) return;
+    const topPk = relField.refname || topTable.pk_name;
 
+    const summary = field.attributes.summary_field || refTable.pk_name;
+    const relSummary = relField.attributes?.summary_field || topPk;
+    const userOpts = { forUser: user, forPublic: !user || user.role_id === 100 };
+
+    // Level 1 comes from the parent table itself, so parents without any
+    // (visible) child are still listed
     const groups = new Map();
+    const topRows = await topTable.getRows({}, userOpts);
+    for (const top of topRows) {
+      const gid = top[topPk];
+      if (gid === null || gid === undefined) continue;
+      groups.set(String(gid), {
+        id: gid,
+        label: `${top[relSummary] ?? gid}`,
+        options: [],
+      });
+    }
+
+    const rows = await refTable.getRows(
+      where && typeof where === "object" ? where : {},
+      userOpts
+    );
     for (const row of rows) {
       const gid = row[relation];
-      if (gid === null || gid === undefined) continue;
-      if (!groups.has(gid))
-        groups.set(gid, {
-          id: gid,
-          label: `${row._xt2ls_first_level ?? gid}`,
-          options: [],
-        });
-      groups.get(gid).options.push({
+      if (gid === null || gid === undefined || !groups.has(String(gid))) continue;
+      groups.get(String(gid)).options.push({
         value: row[field.refname || refTable.pk_name],
         label: `${row[summary] ?? ""}`,
       });

@@ -26,4 +26,5 @@ For local development: `saltcorn install-plugin -d /path/to/xt-2-level-select`
 
 ## Notes
 
+- Level 1 lists every row of the parent table, including those with no level 2 value.
 - Tom Select 2.6.2 is bundled in `public/` (Apache-2.0, see `public/tom-select.LICENSE`). No CDN required.

@@ -19,6 +19,7 @@ Le premier select (niveau 1) filtre les valeurs du second (niveau 2). Le niveau 
 ## Notes
 
 - Les options sont triées par libellé, aux deux niveaux.
+- Le niveau 1 liste toutes les lignes de la table parente, y compris celles qui n'ont aucune valeur de niveau 2.
 - Le select de niveau 2 est désactivé tant qu'aucun niveau 1 n'est choisi.
 - La contrainte `where` du champ (si elle est statique) est appliquée aux valeurs de niveau 2.
 - Tom Select 2.6.2 est embarqué dans `public/` (licence Apache-2.0, voir `public/tom-select.LICENSE`). Aucun CDN n'est requis.
