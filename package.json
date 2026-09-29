@@ -1,0 +1,12 @@
+{
+  "name": "@enojaroff/xt-2-level-select",
+  "version": "0.1.0",
+  "description": "Enhanced two-level select fieldview for Saltcorn: searchable selects, horizontal/vertical layout, spacing, placeholders and level 1 width",
+  "main": "index.js",
+  "keywords": ["saltcorn", "plugin", "select", "two-level", "tom-select"],
+  "author": "Edouard Nojaroff",
+  "license": "Apache-2.0",
+  "repository": "github:enojaroff/xt-2-level-select",
+  "files": ["index.js", "public/", "README.md", "README-FR.md", "LICENSE"],
+  "dependencies": {}
+}
